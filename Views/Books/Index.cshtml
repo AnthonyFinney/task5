@@ -1,0 +1,176 @@
+@{
+    ViewData["Title"] = "Books";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-5">Book Store</h2>
+
+    <!-- Controls for language, seed, likes, and reviews -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="input-group mx-3">
+            <select id="language" class="form-select">
+                <option selected value="en-US">English (USA)</option>
+                <option value="de-DE">German (Germany)</option>
+                <option value="fr-FR">French (France)</option>
+            </select>
+        </div>
+        <div class="input-group mx-3">
+            <input type="text" id="seed" class="form-control" placeholder="Enter Seed">
+            <button class="btn btn-outline-secondary" id="generate-seed">Random Seed</button>
+        </div>
+        <div class="input-group mx-3">
+            <label for="likes" class="mx-1">Likes:</label>
+            <input type="range" id="likes" min="0" max="10" step="1" class="form-control-range">
+        </div>
+        <div class="input-group mx-1">
+            <label class="input-group-text" for="reviews">Reviews:</label>
+            <input type="number" id="reviews" min="0" max="5" step="1" class="form-control">
+        </div>
+        <div class="input-group ms-5">
+            <button class="btn btn-outline-primary" id="toggle-view">Switch to Gallery View</button>
+        </div>
+    </div>
+
+    <!-- List View (Default) -->
+    <table class="table table-hover" id="list-view">
+        <thead>
+            <tr>
+                <th>Index</th>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Author(s)</th>
+                <th>Publisher</th>
+            </tr>
+        </thead>
+        <tbody id="book-table"></tbody>
+    </table>
+
+    <div id="gallery-view" class="row mt-4 d-none"></div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            let page = 1;
+            let isLoading = false;
+            let isGalleryView = false;
+
+            function loadBooks() {
+                if (isLoading) return;
+                isLoading = true;
+
+                const seed = $("#seed").val() || "default";
+                $.ajax({
+                    url: "/Books/Generate",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ seed: seed, page: page }),
+                    success: function (books) {
+                        if (isGalleryView) {
+                            renderGallery(books);
+                        } else {
+                            renderTable(books);
+                        }
+                        page++;
+                    },
+                    error: function (e) {
+                        console.error("Error loading books:", e.responseText);
+                    },
+                    complete: function () {
+                        isLoading = false;
+                    }
+                });
+            }
+
+            function renderTable(books) {
+                const table = $("#book-table");
+                books.forEach(book => {
+                    const row = `
+                    <tr data-index="${book.index}">
+                        <td>${book.index}</td>
+                        <td>${book.isbn}</td>
+                        <td>${book.title}</td>
+                        <td>${book.author === null ? "Unknown Author" : book.author}</td>
+                        <td>${book.publisher}</td>
+                    </tr>
+                    <tr class="expanded-row" id="expanded-${book.index}" style="display: none;">
+                        <td colspan="5">
+                            <div class="expanded-content">
+                                    <img src="${book.coverUrl}" alt="Cover Image" style="width: 100px; height: 150px;">
+                                <div class="reviews">
+                                    <p><strong>Reviews:</strong></p>
+                                    <ul>
+                                        ${book.reviewTexts.map(review => `<li>${review}</li>`).join('')}
+                                    </ul>
+                                    <p><strong>Review Score:</strong> ${book.reviews}</p> <p><strong>Like Score:</strong> ${book.likes}</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                                                                `;
+                    table.append(row);
+
+                    // Toggle expanded view when the row is clicked
+                    $(`tr[data-index="${book.index}"]`).click(function () {
+                        const expandedRow = $(`#expanded-${book.index}`);
+                        expandedRow.toggle();  // Toggle visibility of the expanded row
+                    });
+                });
+            }
+
+            function renderGallery(books) {
+                const gallery = $("#gallery-view");
+                books.forEach(book => {
+                    const card = `<div class="col-md-3 mb-4">
+            <div class="card">
+                <img src="${book.coverUrl}" class="card-img-top" alt="Book Cover">
+                <div class="card-body">
+                    <h5 class="card-title">${book.title}</h5>
+                    <p class="card-text"><strong>Author:</strong> ${book.author === null ? "Unknown Author" : book.author}</p>
+                    <p class="card-text"><strong>Publisher:</strong> ${book.publisher}</p>
+                    <p class="card-text"><strong>Likes:</strong> ${book.likes}</p>
+                    <p class="card-text"><strong>Reviews:</strong> ${book.reviews}</p>
+                </div>
+                </div>
+            </div>`;
+                    gallery.append(card);
+                });
+            }
+
+            function handleSeedChange() {
+                const newSeed = Math.random().toString(36).substring(2, 10);
+                $("#seed").val(newSeed);
+                page = 1; // Reset page when changing seed
+                $("#book-table").empty();
+                $("#gallery-view").empty();
+                loadBooks();
+            }
+
+            $("#generate-seed").click(handleSeedChange);
+
+            $("#seed").on("input", function () {
+                page = 1;
+                $("#book-table").empty();
+                $("#gallery-view").empty();
+                loadBooks();
+            })
+
+            $("#toggle-view").click(function () {
+                isGalleryView = !isGalleryView;
+                $("#list-view").toggleClass("d-none", isGalleryView);
+                $("#gallery-view").toggleClass("d-none", !isGalleryView);
+                $("#toggle-view").text(isGalleryView ? "Switch to List View" : "Switch to Gallery View");
+                loadBooks();
+            });
+
+            $(window).scroll(function () {
+                if (isLoading) return;
+                if ($(window).scrollTop() + $(window).height() >= $(document).height() - 200) {
+                    loadBooks();
+                }
+            });
+
+            loadBooks(); // Initial book load
+        });
+    </script>
+}
