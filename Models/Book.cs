@@ -15,7 +15,5 @@ public class Book {
 public class RequestBooks {
     public string Seed { get; set; }
     public int Page { get; set; }
-    public int LikesPerBook { get; set; } = 0;
-    public int ReviewsScore { get; set; } = 0;
-    public string Language { get; set; } = null;
+    public string Language { get; set; }
 }
