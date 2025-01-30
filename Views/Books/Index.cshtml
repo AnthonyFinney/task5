@@ -9,9 +9,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="input-group mx-3">
             <select id="language" class="form-select">
-                <option selected value="en-US">English (USA)</option>
-                <option value="de-DE">German (Germany)</option>
-                <option value="fr-FR">French (France)</option>
+                <option selected value="en">English (USA)</option>
+                <option value="de">German (Germany)</option>
+                <option value="fr">French (France)</option>
             </select>
         </div>
         <div class="input-group mx-3">
@@ -101,25 +101,25 @@
                 const table = $("#book-table");
                 books.forEach(book => {
                     const row = `
-    <tr data-index="${book.index}">
-    <td>${book.index}</td>
-    <td>${book.isbn}</td>
-    <td>${book.title}</td>
-    <td>${book.author === null ? "Unknown Author" : book.author}</td>
-    <td>${book.publisher}</td>
-    </tr>
-    <tr class="expanded-row" id="expanded-${book.index}" style="display: none;">
-    <td colspan="5">
-    <div class="expanded-content">
-    <img src="${book.coverUrl}" alt="Cover Image" style="width: 100px; height: 150px;">
-    <div class="reviews">
-    <p><strong>Reviews:</strong> <span class="book-reviews" data-index="${book.index}">${book.reviews}</span></p>
-    <p><strong>Likes:</strong> <span class="book-likes" data-index="${book.index}">${book.likes}</span></p>
-    </div>
-    </div>
-    </td>
-    </tr>
-    `;
+        <tr data-index="${book.index}">
+        <td>${book.index}</td>
+        <td>${book.isbn}</td>
+        <td>${book.title}</td>
+        <td>${book.author === null ? "Unknown Author" : book.author}</td>
+        <td>${book.publisher}</td>
+        </tr>
+        <tr class="expanded-row" id="expanded-${book.index}" style="display: none;">
+        <td colspan="5">
+        <div class="expanded-content">
+        <img src="${book.coverUrl}" alt="Cover Image" style="width: 100px; height: 150px;">
+        <div class="reviews">
+        <p><strong>Reviews:</strong> <span class="book-reviews" data-index="${book.index}">${book.reviews}</span></p>
+        <p><strong>Likes:</strong> <span class="book-likes" data-index="${book.index}">${book.likes}</span></p>
+        </div>
+        </div>
+        </td>
+        </tr>
+        `;
                     table.append(row);
 
                     // Toggle expanded view when the row is clicked
@@ -151,17 +151,17 @@
                 const gallery = $("#gallery-view");
                 books.forEach(book => {
                     const card = `<div class="col-md-3 mb-4">
-    <div class="card">
-    <img src="${book.coverUrl}" class="card-img-top" alt="Book Cover">
-    <div class="card-body">
-    <h5 class="card-title">${book.title}</h5>
-    <p class="card-text"><strong>Author:</strong> ${book.author === null ? "Unknown Author" : book.author}</p>
-    <p class="card-text"><strong>Publisher:</strong> ${book.publisher}</p>
-    <p class="card-text"><strong>Likes:</strong> <span class="book-likes" data-index="${book.index}">${book.likes}</span></p>
-    <p class="card-text"><strong>Reviews:</strong><span class="book-reviews" data-index="${book.index}">${book.reviews}</span></p>
-    </div>
-    </div>
-    </div>`;
+        <div class="card">
+        <img src="${book.coverUrl}" class="card-img-top" alt="Book Cover">
+        <div class="card-body">
+        <h5 class="card-title">${book.title}</h5>
+        <p class="card-text"><strong>Author:</strong> ${book.author === null ? "Unknown Author" : book.author}</p>
+        <p class="card-text"><strong>Publisher:</strong> ${book.publisher}</p>
+        <p class="card-text"><strong>Likes:</strong> <span class="book-likes" data-index="${book.index}">${book.likes}</span></p>
+        <p class="card-text"><strong>Reviews:</strong><span class="book-reviews" data-index="${book.index}">${book.reviews}</span></p>
+        </div>
+        </div>
+        </div>`;
                     gallery.append(card);
                 });
             }
