@@ -1,0 +1,219 @@
+@{
+    ViewData["Title"] = "Books";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-5">Book Store</h2>
+
+    <!-- Controls for language, seed, likes, and reviews -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="input-group mx-3">
+            <select id="language" class="form-select">
+                <option selected value="en">English (USA)</option>
+                <option value="de">German (Germany)</option>
+                <option value="fr">French (France)</option>
+            </select>
+        </div>
+        <div class="input-group mx-3">
+            <input type="text" id="seed" class="form-control" placeholder="Enter Seed">
+            <button class="btn btn-outline-secondary" id="generate-seed"><svg xmlns="http://www.w3.org/2000/svg"
+                    width="24" height="24" viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6c0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8m0 14c-3.31 0-6-2.69-6-6c0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4l-4-4z" />
+                </svg></button>
+        </div>
+        <div class="input-group mx-3">
+            <label for="likes" class="mx-1">Likes:</label>
+            <input type="range" id="likes" min="0" max="5" step="0.1" class="form-control-range">
+        </div>
+        <div class="input-group mx-1">
+            <label class="input-group-text" for="reviews">Reviews:</label>
+            <input type="number" id="reviews" min="0" max="5" step="0.1" class="form-control">
+        </div>
+        <div class="input-group ms-5">
+            <button class="btn btn-outline-primary" id="list-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24"
+                    height="24" viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5s1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5m0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5S5.5 6.83 5.5 6S4.83 4.5 4 4.5m0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5s1.5-.68 1.5-1.5s-.67-1.5-1.5-1.5M7 19h14v-2H7zm0-6h14v-2H7zm0-8v2h14V5z" />
+                </svg></button>
+            <button class="btn btn-outline-secondary" id="gallery-btn"><svg xmlns="http://www.w3.org/2000/svg"
+                    width="24" height="24" viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M3 5v14h18V5zm16 6h-3.33V7H19zm-5.33 0h-3.33V7h3.33zM8.33 7v4H5V7zM5 17v-4h3.33v4zm5.33 0v-4h3.33v4zm5.34 0v-4H19v4z" />
+                </svg></button>
+        </div>
+    </div>
+
+    <!-- List View (Default) -->
+    <table class="table table-hover" id="list-view">
+        <thead>
+            <tr>
+                <th>Index</th>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Author(s)</th>
+                <th>Publisher</th>
+            </tr>
+        </thead>
+        <tbody id="book-table"></tbody>
+    </table>
+
+    <div id="gallery-view" class="row mt-4 d-none"></div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            let page = 1;
+            let isLoading = false;
+            let isGalleryView = false;
+
+            function loadBooks() {
+                if (isLoading) return;
+                isLoading = true;
+
+                const seed = $("#seed").val() || "default";
+                const language = $("#language").val();
+
+                $.ajax({
+                    url: "/Books/Generate",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ seed: seed, page: page, language: language }),
+                    success: function (books) {
+                        if (isGalleryView) {
+                            renderGallery(books);
+                        } else {
+                            renderTable(books);
+                        }
+                        page++;
+                    },
+                    error: function (e) {
+                        console.error("Error loading books:", e.responseText);
+                    },
+                    complete: function () {
+                        isLoading = false;
+                    }
+                });
+            }
+
+            function renderTable(books) {
+                const table = $("#book-table");
+                books.forEach(book => {
+                    const row = `
+        <tr data-index="${book.index}">
+        <td>${book.index}</td>
+        <td>${book.isbn}</td>
+        <td>${book.title}</td>
+        <td>${book.author === null ? "Unknown Author" : book.author}</td>
+        <td>${book.publisher}</td>
+        </tr>
+        <tr class="expanded-row" id="expanded-${book.index}" style="display: none;">
+        <td colspan="5">
+        <div class="expanded-content">
+        <img src="${book.coverUrl}" alt="Cover Image" style="width: 100px; height: 150px;">
+        <div class="reviews">
+        <p><strong>Reviews:</strong> <span class="book-reviews" data-index="${book.index}">${book.reviews}</span></p>
+        <p><strong>Likes:</strong> <span class="book-likes" data-index="${book.index}">${book.likes}</span></p>
+        </div>
+        </div>
+        </td>
+        </tr>
+        `;
+                    table.append(row);
+
+                    // Toggle expanded view when the row is clicked
+                    $(`tr[data-index="${book.index}"]`).click(function () {
+                        const expandedRow = $(`#expanded-${book.index}`);
+                        expandedRow.toggle();  // Toggle visibility of the expanded row
+                    });
+                });
+            }
+
+            $("#likes").on("input", function () {
+                const newLikes = $(this).val();
+                $(".book-likes").text(newLikes);
+            });
+
+            $("#reviews").on("input", function () {
+                const newReviews = $(this).val();
+                $(".book-reviews").text(newReviews);
+            });
+
+            $("#language").change(function () {
+                page = 1;
+                $("#book-table").empty();
+                $("#gallery-view").empty();
+                loadBooks();
+            });
+
+            function renderGallery(books) {
+                const gallery = $("#gallery-view");
+                books.forEach(book => {
+                    const card = `<div class="col-md-3 mb-4">
+        <div class="card">
+        <img src="${book.coverUrl}" class="card-img-top" alt="Book Cover">
+        <div class="card-body">
+        <h5 class="card-title">${book.title}</h5>
+        <p class="card-text"><strong>Author:</strong> ${book.author === null ? "Unknown Author" : book.author}</p>
+        <p class="card-text"><strong>Publisher:</strong> ${book.publisher}</p>
+        <p class="card-text"><strong>Likes:</strong> <span class="book-likes" data-index="${book.index}">${book.likes}</span></p>
+        <p class="card-text"><strong>Reviews:</strong><span class="book-reviews" data-index="${book.index}">${book.reviews}</span></p>
+        </div>
+        </div>
+        </div>`;
+                    gallery.append(card);
+                });
+            }
+
+            function handleSeedChange() {
+                const newSeed = Math.random().toString(36).substring(2, 10);
+                $("#seed").val(newSeed);
+                page = 1; // Reset page when changing seed
+                $("#book-table").empty();
+                $("#gallery-view").empty();
+                loadBooks();
+            }
+
+            $("#generate-seed").click(handleSeedChange);
+
+            $("#seed").on("input", function () {
+                page = 1;
+                $("#book-table").empty();
+                $("#gallery-view").empty();
+                loadBooks();
+            })
+
+            $("#list-btn").click(function () {
+                isGalleryView = false;
+                $("#list-view").removeClass("d-none");
+                $("#gallery-view").addClass("d-none");
+
+                $(this).removeClass("btn-outline-secondary").addClass("btn-outline-primary");
+                $("#gallery-btn").removeClass("btn-outline-primary").addClass("btn-outline-secondary");
+
+                loadBooks();
+            });
+
+            $("#gallery-btn").click(function () {
+                isGalleryView = true;
+                $("#gallery-view").removeClass("d-none");
+                $("#list-view").addClass("d-none");
+
+                $(this).removeClass("btn-outline-secondary").addClass("btn-outline-primary");
+                $("#list-btn").removeClass("btn-outline-primary").addClass("btn-outline-secondary");
+
+                loadBooks();
+            });
+
+            $(window).scroll(function () {
+                if (isLoading) return;
+                if ($(window).scrollTop() + $(window).height() >= $(document).height() - 200) {
+                    loadBooks();
+                }
+            });
+
+            loadBooks(); // Initial book load
+        });
+    </script>
+}
